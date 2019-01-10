@@ -15,11 +15,11 @@ func parseCodeWithTypeWalker(t *testing.T, sourceCode string) *typeWalker {
 	return typeWalker
 }
 
-func parseCodeWithFuncWalker(t *testing.T, sourceCode string) *funcWalker {
-	funcWalker := newFuncWalker()
-	parseCode(t, sourceCode, &funcWalker.AbstractWalker)
-	return funcWalker
-}
+//func parseCodeWithFuncWalker(t *testing.T, sourceCode string, ) *funcWalker {
+//	funcWalker := NewFuncWalker()
+//	parseCode(t, sourceCode, &funcWalker.AbstractWalker)
+//	return funcWalker
+//}
 
 func parseCode(t *testing.T, sourceCode string, walker *AbstractWalker) {
 	walker.physicalPath = testPhysicalPath

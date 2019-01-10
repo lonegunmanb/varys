@@ -1,25 +1,44 @@
 package ast
 
 import (
+	"github.com/lonegunmanb/johnnie"
 	"go/ast"
 )
 
-type funcWalker struct {
-	AbstractWalker
-	methods []MethodInfo
+type FuncWalker interface {
+	johnnie.Walker
+	GetMethods() []MethodInfo
 }
 
-func newFuncWalker() *funcWalker {
-	walker := &funcWalker{}
+type funcWalker struct {
+	AbstractWalker
+	methods             []MethodInfo
+	structTypeRetriever ReceiverTypeRetriever
+}
+
+func (walker *funcWalker) GetMethods() []MethodInfo {
+	return walker.methods
+}
+
+func NewFuncWalker(structTypeRetriever ReceiverTypeRetriever) FuncWalker {
+	if structTypeRetriever == nil {
+		panic("no struct type info")
+	}
+	walker := &funcWalker{
+		structTypeRetriever: structTypeRetriever,
+	}
 	walker.AbstractWalker = *newAbstractWalker(walker)
 	return walker
 }
 
-func (walker *funcWalker) WalkFuncDecl(d *ast.FuncDecl) bool {
-	isMethod := d.Recv != nil && len(d.Recv.List) == 1
+func (walker *funcWalker) WalkFuncDecl(funcDecl *ast.FuncDecl) bool {
+	isMethod := funcDecl.Recv != nil && len(funcDecl.Recv.List) == 1
 	if isMethod {
-		methodInfo := &methodInfo{name: d.Name.Name}
+		methodInfo := &methodInfo{
+			name:     funcDecl.Name.Name,
+			receiver: walker.structTypeRetriever.GetType(funcDecl.Recv.List[0].Type),
+		}
 		walker.methods = append(walker.methods, methodInfo)
 	}
-	return true
+	return false
 }
