@@ -17,6 +17,10 @@ func GetOrRegister(interfaceType interface{}, factory func() interface{}) interf
 	return f()
 }
 
+func ClearTypeRegister() {
+	factories = make(map[string]func() interface{})
+}
+
 func getTypeName(interfaceType interface{}) string {
 	t := reflect.TypeOf(interfaceType).Elem()
 	pkgPath := t.PkgPath()
