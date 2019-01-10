@@ -21,7 +21,7 @@ func (r *fileRetriever) GetFiles(startingPath string) ([]FileInfo, error) {
 	err := filepath.Walk(startingPath, func(path string, info os.FileInfo, err error) error {
 		files = append(files, &fileInfo{
 			FileInfo: info,
-			filePath: filepath.Dir(path),
+			fileDir:  filepath.Dir(path),
 		})
 		return nil
 	})

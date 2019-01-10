@@ -25,9 +25,7 @@ type TypeWalker interface {
 	GetTypes() []TypeInfo
 	Parse(pkgPath string, sourceCode string) error
 	ParseDir(dirPath string, ignorePattern string) error
-	SetTypeInfo(i *types.Info)
 	SetPhysicalPath(p string)
-	ParseAst(path string, fileAst *ast.File) error
 }
 
 type typeWalker struct {
@@ -36,7 +34,7 @@ type typeWalker struct {
 	types         []*typeInfo
 	typeInfoStack stack.Stack
 	opsStack      stack.Stack
-	typeInfo      *types.Info
+	analyzedTypes *types.Info
 	pkgPath       string
 	pkgName       string
 	physicalPath  string
@@ -46,8 +44,8 @@ func (walker *typeWalker) SetPhysicalPath(p string) {
 	walker.physicalPath = p
 }
 
-func (walker *typeWalker) SetTypeInfo(i *types.Info) {
-	walker.typeInfo = i
+func (walker *typeWalker) setTypeInfo(i *types.Info) {
+	walker.analyzedTypes = i
 }
 
 func (walker *typeWalker) GetTypes() []TypeInfo {
@@ -76,14 +74,6 @@ func (walker *typeWalker) ParseDir(dirPath string, ignorePattern string) error {
 	return walker.walkAsts(fileAstMap, info)
 }
 
-func (walker *typeWalker) ParseAst(path string, fileAst *ast.File) error {
-	pkgPath, err := GetPkgPath(walker.osEnv, path)
-	if err != nil {
-		return err
-	}
-	return walker.parseAst(pkgPath, fileAst)
-}
-
 func (walker *typeWalker) Types() []*typeInfo {
 	return walker.types
 }
@@ -95,7 +85,7 @@ func (walker *typeWalker) WalkFile(f *ast.File) {
 func (walker *typeWalker) WalkField(field *ast.Field) {
 	if walker.isAnalyzingType() {
 		typeInfo := walker.typeInfoStack.Peek().(*typeInfo)
-		t := walker.typeInfo.Types[field.Type]
+		t := walker.analyzedTypes.Types[field.Type]
 		fieldType := t.Type
 		emitTypeNameIfFiledIsNestedType(walker, fieldType)
 		typeInfo.processField(field, fieldType)
@@ -151,29 +141,30 @@ func newTypeWalkerWithPhysicalPath(physicalPath string) TypeWalker {
 	}
 }
 
-func (*typeWalker) parseTypeInfo(pkgPath string, fileSet *token.FileSet,
+func (*typeWalker) analyzeTypes(pkgPath string, fileSet *token.FileSet,
 	astFile *ast.File) (*types.Info, error) {
-	typeInfo := &types.Info{Types: make(map[ast.Expr]types.TypeAndValue)}
+	analyzedTypes := &types.Info{Types: make(map[ast.Expr]types.TypeAndValue)}
 	_, err := (&types.Config{Importer: importer.For("source", nil)}).
-		Check(pkgPath, fileSet, []*ast.File{astFile}, typeInfo)
-	return typeInfo, err
+		Check(pkgPath, fileSet, []*ast.File{astFile}, analyzedTypes)
+	return analyzedTypes, err
 }
 
-func (walker *typeWalker) addTypeInfo(structTypeExpr ast.Expr, kind reflect.Kind) {
+func (walker *typeWalker) addTypeInfo(typeExpr ast.Expr, kind reflect.Kind) {
 
 	item := walker.typeInfoStack.Pop()
 	typeName, ok := item.(string)
 	if !ok {
 		println(typeName)
 	}
-	structType := walker.typeInfo.Types[structTypeExpr].Type
+	analyzedType := walker.analyzedTypes.Types[typeExpr].Type
 	typeInfo := &typeInfo{
 		Name:         typeName,
 		PkgPath:      walker.pkgPath,
 		PkgName:      walker.pkgName,
 		PhysicalPath: walker.physicalPath,
-		Type:         structType,
+		Type:         analyzedType,
 		Kind:         kind,
+		declExp:      typeExpr,
 	}
 	walker.typeInfoStack.Push(typeInfo)
 	walker.types = append(walker.types, typeInfo)
@@ -239,23 +230,27 @@ func (walker *typeWalker) parse(pkgPath string, fileName string, sourceCode stri
 		return err
 	}
 
-	if walker.typeInfo == nil {
-		typeInfo, err := walker.parseTypeInfo(pkgPath, fileset, astFile)
+	if walker.analyzedTypes == nil {
+		analyzedTypes, err := walker.analyzeTypes(pkgPath, fileset, astFile)
 		if err != nil {
 			return err
 		}
-		walker.typeInfo = typeInfo
+		walker.analyzedTypes = analyzedTypes
 	}
 
 	return walker.parseAst(pkgPath, astFile)
 }
 
 func (walker *typeWalker) walkAsts(fileMap map[string][]*ast.File, info *types.Info) error {
+	walker.setTypeInfo(info)
 	for path, fileAsts := range fileMap {
 		walker.SetPhysicalPath(path)
-		walker.SetTypeInfo(info)
+		pkgPath, err := GetPkgPath(walker.osEnv, path)
+		if err != nil {
+			return err
+		}
 		for _, fileAst := range fileAsts {
-			err := walker.ParseAst(path, fileAst)
+			err := walker.parseAst(pkgPath, fileAst)
 			if err != nil {
 				return err
 			}
@@ -272,11 +267,11 @@ func (walker *typeWalker) parseFileAsts(dirPath string, ignorePattern string, fS
 	}
 	fileMap := make(map[string][]*ast.File)
 	for _, file := range files {
-		fileAst, err := parser.ParseFile(fSet, osEnv.ConcatFileNameWithPath(file.Path(), file.Name()), nil, 0)
+		fileAst, err := parser.ParseFile(fSet, osEnv.ConcatFileNameWithPath(file.Dir(), file.Name()), nil, 0)
 		if err != nil {
 			return nil, err
 		}
-		fileMap[file.Path()] = append(fileMap[file.Path()], fileAst)
+		fileMap[file.Dir()] = append(fileMap[file.Dir()], fileAst)
 	}
 	return fileMap, nil
 }

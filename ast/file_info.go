@@ -4,14 +4,14 @@ import "os"
 
 type FileInfo interface {
 	os.FileInfo
-	Path() string
+	Dir() string
 }
 
 type fileInfo struct {
 	os.FileInfo
-	filePath string
+	fileDir string
 }
 
-func (f *fileInfo) Path() string {
-	return f.filePath
+func (f *fileInfo) Dir() string {
+	return f.fileDir
 }
