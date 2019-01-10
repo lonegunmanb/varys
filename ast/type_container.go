@@ -17,6 +17,11 @@ func GetOrRegister(interfaceType interface{}, factory func() interface{}) interf
 	return f()
 }
 
+func RegisterType(interfaceType interface{}, factory func() interface{}) {
+	typeName := getTypeName(interfaceType)
+	factories[typeName] = factory
+}
+
 func ClearTypeRegister() {
 	factories = make(map[string]func() interface{})
 }
