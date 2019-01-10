@@ -29,7 +29,7 @@ func TestGetPkgPathInWindows(t *testing.T) {
 	mockEnv := NewMockGoPathEnv(ctrl)
 	mockEnv.EXPECT().IsWindows().AnyTimes().Return(true)
 	mockEnv.EXPECT().GetGoPath().AnyTimes().Return("c:\\go")
-	pkgPath, err := GetPkgPath(mockEnv, "c:\\go\\src\\github.com\\lonegunmanb\\syringe")
+	pkgPath, err := getPkgPath(mockEnv, "c:\\go\\src\\github.com\\lonegunmanb\\syringe")
 	assert.Nil(t, err)
 	assert.Equal(t, expectedPkgName, pkgPath)
 }

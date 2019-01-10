@@ -44,7 +44,7 @@ func (walker *typeWalker) SetPhysicalPath(p string) {
 	walker.physicalPath = p
 }
 
-func (walker *typeWalker) setTypeInfo(i *types.Info) {
+func (walker *typeWalker) setAnalyzedTypes(i *types.Info) {
 	walker.analyzedTypes = i
 }
 
@@ -71,7 +71,8 @@ func (walker *typeWalker) ParseDir(dirPath string, ignorePattern string) error {
 	if err != nil {
 		return err
 	}
-	return walker.walkAsts(fileAstMap, info)
+	walker.setAnalyzedTypes(info)
+	return walker.walkAsts(fileAstMap)
 }
 
 func (walker *typeWalker) Types() []*typeInfo {
@@ -229,23 +230,24 @@ func (walker *typeWalker) parse(pkgPath string, fileName string, sourceCode stri
 	if err != nil {
 		return err
 	}
-
+	fileAstMap := make(map[string][]*ast.File)
+	fileAstMap[walker.physicalPath] = []*ast.File{astFile}
 	if walker.analyzedTypes == nil {
 		analyzedTypes, err := walker.analyzeTypes(pkgPath, fileset, astFile)
 		if err != nil {
 			return err
 		}
-		walker.analyzedTypes = analyzedTypes
+		walker.setAnalyzedTypes(analyzedTypes)
 	}
 
-	return walker.parseAst(pkgPath, astFile)
+	return walker.walkAsts(fileAstMap)
 }
 
-func (walker *typeWalker) walkAsts(fileMap map[string][]*ast.File, info *types.Info) error {
-	walker.setTypeInfo(info)
+func (walker *typeWalker) walkAsts(fileMap map[string][]*ast.File) error {
+
 	for path, fileAsts := range fileMap {
 		walker.SetPhysicalPath(path)
-		pkgPath, err := GetPkgPath(walker.osEnv, path)
+		pkgPath, err := walker.osEnv.GetPkgPath(path)
 		if err != nil {
 			return err
 		}
@@ -328,7 +330,7 @@ func parseTypes(fileMap map[string][]*ast.File, fSet *token.FileSet, osEnv GoPat
 	}
 	for path, fileAsts := range fileMap {
 		var conf = &types.Config{Importer: importer.For("source", nil)}
-		goPath, err := GetPkgPath(osEnv, path)
+		goPath, err := osEnv.GetPkgPath(path)
 		if err != nil {
 			return nil, err
 		}

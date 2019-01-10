@@ -13,6 +13,7 @@ type GoPathEnv interface {
 	IsWindows() bool
 	GetGoPath() string
 	ConcatFileNameWithPath(path string, fileName string) string
+	GetPkgPath(systemPath string) (string, error)
 }
 
 type envImpl struct {
@@ -41,7 +42,11 @@ func concatFileNameWithPath(isWindows bool, path string, fileName string) string
 	return fmt.Sprintf("%s/%s", path, fileName)
 }
 
-func GetPkgPath(env GoPathEnv, systemPath string) (string, error) {
+func (e *envImpl) GetPkgPath(systemPath string) (string, error) {
+	return getPkgPath(e, systemPath)
+}
+
+func getPkgPath(env GoPathEnv, systemPath string) (string, error) {
 	isWindows := env.IsWindows()
 	goPaths, err := getGoPaths(env)
 	if err != nil {

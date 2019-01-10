@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"go/types"
 	"reflect"
@@ -338,6 +339,11 @@ type TestStruct struct {
 `
 	expectedPhysicalPath := "expected"
 	typeWalker := newTypeWalkerWithPhysicalPath(expectedPhysicalPath).(*typeWalker)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockOsEnv := NewMockGoPathEnv(ctrl)
+	mockOsEnv.EXPECT().GetPkgPath(gomock.Eq(expectedPhysicalPath)).Times(1).Return(testPkgPath, nil)
+	typeWalker.osEnv = mockOsEnv
 	err := typeWalker.Parse(testPkgPath, sourceCode)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedPhysicalPath, typeWalker.GetTypes()[0].GetPhysicalPath())
@@ -428,3 +434,18 @@ func TestIgnorePattern(t *testing.T) {
 func returnField1(input interface{}) string {
 	return input.(Struct2).Field.Field1
 }
+
+//func TestStructMethod(t *testing.T) {
+//	code := `
+//package ast
+//type Struct struct {
+//}
+//
+//func (s *Struct) Method() {
+//}`
+//	walker := parseCode(t, code)
+//	structType := walker.GetTypes()[0]
+//	methods := structType.GetMethods()
+//	assert.Equal(t, 1, len(methods))
+//	assert.Equal(t, "Method", methods[0].GetName())
+//}
