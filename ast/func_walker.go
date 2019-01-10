@@ -15,10 +15,11 @@ func newFuncWalker() *funcWalker {
 	return walker
 }
 
-func (walker *funcWalker) WalkFuncDecl(d *ast.FuncDecl) {
+func (walker *funcWalker) WalkFuncDecl(d *ast.FuncDecl) bool {
 	isMethod := d.Recv != nil && len(d.Recv.List) == 1
 	if isMethod {
 		methodInfo := &methodInfo{name: d.Name.Name}
 		walker.methods = append(walker.methods, methodInfo)
 	}
+	return true
 }

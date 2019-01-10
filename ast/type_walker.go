@@ -41,51 +41,60 @@ func (walker *typeWalker) Types() []*typeInfo {
 	return walker.types
 }
 
-func (walker *typeWalker) WalkFile(f *ast.File) {
+func (walker *typeWalker) WalkFile(f *ast.File) bool {
 	walker.pkgName = f.Name.Name
+	return true
 }
 
-func (walker *typeWalker) WalkField(field *ast.Field) {
+func (walker *typeWalker) WalkField(field *ast.Field) bool {
 	if walker.isAnalyzingType() {
 		typeInfo := walker.typeInfoStack.Peek().(*typeInfo)
 		t := walker.analyzedTypes.Types[field.Type]
 		fieldType := t.Type
 		emitTypeNameIfFiledIsNestedType(walker, fieldType)
 		typeInfo.processField(field, fieldType)
+		return true
 	}
+	return false
 }
 
-func (walker *typeWalker) WalkStructType(structType *ast.StructType) {
+func (walker *typeWalker) WalkStructType(structType *ast.StructType) bool {
 	if walker.opsStack.Peek() == analyzingType {
 		walker.addTypeInfo(structType, reflect.Struct)
+		return true
 	}
+	return false
 }
 
 func (walker *typeWalker) EndWalkStructType(structType *ast.StructType) {
 	walker.typeInfoStack.Pop()
 }
 
-func (walker *typeWalker) WalkInterfaceType(interfaceType *ast.InterfaceType) {
+func (walker *typeWalker) WalkInterfaceType(interfaceType *ast.InterfaceType) bool {
 	if walker.opsStack.Peek() == analyzingType {
 		walker.addTypeInfo(interfaceType, reflect.Interface)
+		return true
 	}
+	return false
 }
 
 func (walker *typeWalker) EndWalkInterfaceType(interfaceType *ast.InterfaceType) {
 	walker.typeInfoStack.Pop()
 }
 
-func (walker *typeWalker) WalkTypeSpec(spec *ast.TypeSpec) {
+func (walker *typeWalker) WalkTypeSpec(spec *ast.TypeSpec) bool {
 	walker.typeInfoStack.Push(spec.Name.Name)
 	walker.opsStack.Push(analyzingType)
+	return true
 }
 
 func (walker *typeWalker) EndWalkTypeSpec(spec *ast.TypeSpec) {
 	walker.opsStack.Pop()
 }
 
-func (walker *typeWalker) WalkFuncType(funcType *ast.FuncType) {
+func (walker *typeWalker) WalkFuncType(funcType *ast.FuncType) bool {
 	walker.opsStack.Push(analyzingFunc)
+	return true
 }
 
 func (walker *typeWalker) EndWalkFuncType(funcType *ast.FuncType) {

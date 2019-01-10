@@ -27,6 +27,25 @@ func (walker *AbstractWalker) SetDir(dir string) {
 	walker.physicalPath = dir
 }
 
+func (walker *AbstractWalker) Parse(pkgPath string, sourceCode string) error {
+	return walker.parse(pkgPath, "src.go", sourceCode)
+}
+
+func (walker *AbstractWalker) ParseDir(dirPath string, ignorePattern string) error {
+	fSet := token.NewFileSet()
+	osEnv := getOsEnv()
+	fileAstMap, err := walker.parseFileAsts(dirPath, ignorePattern, fSet, osEnv)
+	if err != nil {
+		return err
+	}
+	info, err := parseTypes(fileAstMap, fSet, osEnv)
+	if err != nil {
+		return err
+	}
+	walker.setAnalyzedTypes(info)
+	return walker.walkAsts(fileAstMap)
+}
+
 func newAbstractWalker(actualWalker johnnie.Walker) *AbstractWalker {
 	return &AbstractWalker{
 		osEnv:        getOsEnv(),
@@ -128,25 +147,6 @@ func (walker *AbstractWalker) parse(pkgPath string, fileName string, sourceCode 
 		walker.setAnalyzedTypes(analyzedTypes)
 	}
 
-	return walker.walkAsts(fileAstMap)
-}
-
-func (walker *AbstractWalker) Parse(pkgPath string, sourceCode string) error {
-	return walker.parse(pkgPath, "src.go", sourceCode)
-}
-
-func (walker *AbstractWalker) ParseDir(dirPath string, ignorePattern string) error {
-	fSet := token.NewFileSet()
-	osEnv := getOsEnv()
-	fileAstMap, err := walker.parseFileAsts(dirPath, ignorePattern, fSet, osEnv)
-	if err != nil {
-		return err
-	}
-	info, err := parseTypes(fileAstMap, fSet, osEnv)
-	if err != nil {
-		return err
-	}
-	walker.setAnalyzedTypes(info)
 	return walker.walkAsts(fileAstMap)
 }
 
