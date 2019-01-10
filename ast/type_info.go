@@ -31,6 +31,11 @@ type typeInfo struct {
 	Kind          reflect.Kind
 	Type          types.Type
 	EmbeddedTypes []EmbeddedType
+	declExp       ast.Expr
+}
+
+func (typeInfo *typeInfo) GetMethods() []MethodInfo {
+	panic("implement me")
 }
 
 func (typeInfo *typeInfo) GetPhysicalPath() string {

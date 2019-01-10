@@ -12,7 +12,7 @@ package ast
 type Struct struct{
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	typeInfo := walker.Types()[0]
 	assert.Equal(t, "Struct", typeInfo.Name)
 }
@@ -23,7 +23,7 @@ package ast
 type Struct struct{
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	typeInfo := walker.Types()[0]
 	assert.Equal(t, testPkgPath, typeInfo.PkgPath)
 	assert.Equal(t, "ast", typeInfo.PkgName)
@@ -39,7 +39,7 @@ type Struct2 struct {
 
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	typeInfo := walker.Types()[0]
 	assert.Equal(t, testPkgPath, typeInfo.PkgPath)
 }
@@ -50,7 +50,7 @@ package test
 type Struct struct{
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	typeInfo := walker.Types()[0]
 	assert.Equal(t, testPkgPath, typeInfo.PkgPath)
 	assert.Equal(t, "test", typeInfo.PkgName)
@@ -81,7 +81,7 @@ type Struct struct {
 	Map map[*scanner.Error]*token.FileSet //dep go/scanner, go/token
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	structInfo := walker.Types()[0]
 	depPkgPaths := structInfo.GetDepPkgPaths("")
 	assert.Equal(t, 2, len(depPkgPaths))

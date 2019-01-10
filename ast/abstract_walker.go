@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-type abstractWalker struct {
+type AbstractWalker struct {
 	johnnie.DefaultWalker
 	osEnv         GoPathEnv
 	pkgPath       string
@@ -23,15 +23,22 @@ type abstractWalker struct {
 	analyzedTypes *types.Info
 }
 
-func (walker *abstractWalker) SetDir(dir string) {
+func (walker *AbstractWalker) SetDir(dir string) {
 	walker.physicalPath = dir
 }
 
-func (walker *abstractWalker) setAnalyzedTypes(i *types.Info) {
+func newAbstractWalker(actualWalker johnnie.Walker) *AbstractWalker {
+	return &AbstractWalker{
+		osEnv:        getOsEnv(),
+		actualWalker: actualWalker,
+	}
+}
+
+func (walker *AbstractWalker) setAnalyzedTypes(i *types.Info) {
 	walker.analyzedTypes = i
 }
 
-func (walker *abstractWalker) walkAsts(fileMap map[string][]*ast.File) error {
+func (walker *AbstractWalker) walkAsts(fileMap map[string][]*ast.File) error {
 	for path, fileAsts := range fileMap {
 		walker.SetDir(path)
 		pkgPath, err := walker.osEnv.GetPkgPath(path)
@@ -48,13 +55,13 @@ func (walker *abstractWalker) walkAsts(fileMap map[string][]*ast.File) error {
 	return nil
 }
 
-func walkAst(walker *abstractWalker, pkgPath string, astFile *ast.File) error {
+func walkAst(walker *AbstractWalker, pkgPath string, astFile *ast.File) error {
 	walker.pkgPath = pkgPath
 	johnnie.Visit(walker.actualWalker, astFile)
 	return nil
 }
 
-func (*abstractWalker) analyzeTypes(pkgPath string, fileSet *token.FileSet,
+func (*AbstractWalker) analyzeTypes(pkgPath string, fileSet *token.FileSet,
 	astFile *ast.File) (*types.Info, error) {
 	analyzedTypes := &types.Info{Types: make(map[ast.Expr]types.TypeAndValue)}
 	_, err := (&types.Config{Importer: importer.For("source", nil)}).
@@ -62,7 +69,7 @@ func (*abstractWalker) analyzeTypes(pkgPath string, fileSet *token.FileSet,
 	return analyzedTypes, err
 }
 
-func (*abstractWalker) getFiles(dirPath string, ignorePattern string) ([]FileInfo, error) {
+func (*AbstractWalker) getFiles(dirPath string, ignorePattern string) ([]FileInfo, error) {
 	fileRetrieverKey := (*FileRetriever)(nil)
 	fileRetriever := getOrRegister(fileRetrieverKey, func() interface{} {
 		return NewFileRetriever()
@@ -87,7 +94,7 @@ func (*abstractWalker) getFiles(dirPath string, ignorePattern string) ([]FileInf
 	return filteredFiles, nil
 }
 
-func (walker *abstractWalker) parseFileAsts(dirPath string, ignorePattern string, fSet *token.FileSet,
+func (walker *AbstractWalker) parseFileAsts(dirPath string, ignorePattern string, fSet *token.FileSet,
 	osEnv GoPathEnv) (map[string][]*ast.File, error) {
 	files, err := walker.getFiles(dirPath, ignorePattern)
 	if err != nil {
@@ -104,7 +111,7 @@ func (walker *abstractWalker) parseFileAsts(dirPath string, ignorePattern string
 	return fileMap, nil
 }
 
-func (walker *abstractWalker) parse(pkgPath string, fileName string, sourceCode string) error {
+func (walker *AbstractWalker) parse(pkgPath string, fileName string, sourceCode string) error {
 	fileset := token.NewFileSet()
 
 	astFile, err := parser.ParseFile(fileset, fileName, sourceCode, 0)
@@ -124,11 +131,11 @@ func (walker *abstractWalker) parse(pkgPath string, fileName string, sourceCode 
 	return walker.walkAsts(fileAstMap)
 }
 
-func (walker *abstractWalker) Parse(pkgPath string, sourceCode string) error {
+func (walker *AbstractWalker) Parse(pkgPath string, sourceCode string) error {
 	return walker.parse(pkgPath, "src.go", sourceCode)
 }
 
-func (walker *abstractWalker) ParseDir(dirPath string, ignorePattern string) error {
+func (walker *AbstractWalker) ParseDir(dirPath string, ignorePattern string) error {
 	fSet := token.NewFileSet()
 	osEnv := getOsEnv()
 	fileAstMap, err := walker.parseFileAsts(dirPath, ignorePattern, fSet, osEnv)

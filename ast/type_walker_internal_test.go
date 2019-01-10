@@ -23,7 +23,7 @@ func Test(input int) int{
 	return 1
 }
 `
-	typeWalker := parseCode(t, sourceCode)
+	typeWalker := parseCodeWithTypeWalker(t, sourceCode)
 	struct1 := typeWalker.Types()[0]
 	assert.Equal(t, 0, len(struct1.Fields))
 }
@@ -37,7 +37,7 @@ type TestInterface interface {
 	Hello()
 }
 `
-	typeWalker := parseCode(t, sourceCode)
+	typeWalker := parseCodeWithTypeWalker(t, sourceCode)
 	assert.Equal(t, 2, len(typeWalker.Types()))
 	testStruct := typeWalker.Types()[0]
 	assert.Equal(t, 0, len(testStruct.Fields))
@@ -66,7 +66,7 @@ type TestInterface interface {
 	Hello()
 }
 `
-	typeWalker := parseCode(t, sourceCode)
+	typeWalker := parseCodeWithTypeWalker(t, sourceCode)
 	testStruct := typeWalker.Types()[0]
 	testStructInstance := TestStruct{}
 	for i := 0; i < 2; i++ {
@@ -96,7 +96,7 @@ type Struct struct {
 	Field2 int ` + "`" + "inject:\"Field2\"`" + `
 }
 `
-	typeWalker := parseCode(t, souceCode)
+	typeWalker := parseCodeWithTypeWalker(t, souceCode)
 	struct1 := typeWalker.Types()[0]
 	field := struct1.Fields[0]
 	tag := field.GetTag()
@@ -112,7 +112,7 @@ type Struct struct {
 	Field2 int
 }
 `
-	typeWalker := parseCode(t, sourceCode)
+	typeWalker := parseCodeWithTypeWalker(t, sourceCode)
 	struct1 := typeWalker.Types()[0]
 	field1 := struct1.Fields[0]
 	field2 := struct1.Fields[1]
@@ -131,7 +131,7 @@ type Struct struct {
 	Field2 int
 }
 `
-	typeWalker := parseCode(t, sourceCode)
+	typeWalker := parseCodeWithTypeWalker(t, sourceCode)
 	struct1 := typeWalker.Types()[0]
 	field1 := struct1.Fields[0]
 	field2 := struct1.Fields[1]
@@ -146,7 +146,7 @@ type Struct1 struct {
 	Field *Decl
 }
 `
-	typeWalker := parseCode(t, sourceCode)
+	typeWalker := parseCodeWithTypeWalker(t, sourceCode)
 	structs := typeWalker.Types()
 	struct1 := structs[0]
 	field := struct1.Fields[0]
@@ -175,7 +175,7 @@ type Struct2 struct {
 	
 }
 `
-	typeWalker := parseCode(t, sourceCode)
+	typeWalker := parseCodeWithTypeWalker(t, sourceCode)
 	structs := typeWalker.Types()
 	struct1 := structs[0]
 	assert.Equal(t, 6, len(struct1.Fields))
@@ -227,7 +227,7 @@ type %s struct{
 		field1Name,
 		field2Name)
 
-	typeWalker := parseCode(t, structDefine1)
+	typeWalker := parseCodeWithTypeWalker(t, structDefine1)
 	structs := typeWalker.Types()
 	assert.Len(t, structs, 2)
 	structInfo := structs[0]
@@ -253,7 +253,7 @@ type NestedStruct struct {
 }
 `
 
-	typeWalker := parseCode(t, structDefine)
+	typeWalker := parseCodeWithTypeWalker(t, structDefine)
 	walkedTypes := typeWalker.Types()
 	assert.Len(t, walkedTypes, 4)
 	structInfo := walkedTypes[0]
@@ -275,7 +275,7 @@ type Struct struct {
 	}
 }
 `
-	typeWalker := parseCode(t, structDefine)
+	typeWalker := parseCodeWithTypeWalker(t, structDefine)
 	walkedTypes := typeWalker.Types()
 	assert.Equal(t, 2, len(walkedTypes))
 	nestedType := walkedTypes[1]
@@ -295,7 +295,7 @@ func testNestedStructWithStar(t *testing.T, star string) {
 		Field %sstruct{Name string}
 	}
 	`
-	typeWalker := parseCode(t, fmt.Sprintf(structDefine, star))
+	typeWalker := parseCodeWithTypeWalker(t, fmt.Sprintf(structDefine, star))
 	walkedTypes := typeWalker.Types()
 	assert.Equal(t, 2, len(walkedTypes))
 	nestedType := walkedTypes[1]
@@ -320,7 +320,7 @@ type Struct3 struct {
 	*Struct2
 }
 `
-	typeWalker := parseCode(t, structDefine)
+	typeWalker := parseCodeWithTypeWalker(t, structDefine)
 	interface1 := typeWalker.Types()[0]
 	struct1 := typeWalker.Types()[1]
 	struct2 := typeWalker.Types()[2]
@@ -338,7 +338,8 @@ type TestStruct struct {
 }
 `
 	expectedPhysicalPath := "expected"
-	typeWalker := newTypeWalkerWithPhysicalPath(expectedPhysicalPath).(*typeWalker)
+	typeWalker := NewTypeWalker().(*typeWalker)
+	typeWalker.physicalPath = expectedPhysicalPath
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockOsEnv := NewMockGoPathEnv(ctrl)
@@ -434,18 +435,3 @@ func TestIgnorePattern(t *testing.T) {
 func returnField1(input interface{}) string {
 	return input.(Struct2).Field.Field1
 }
-
-//func TestStructMethod(t *testing.T) {
-//	code := `
-//package ast
-//type Struct struct {
-//}
-//
-//func (s *Struct) Method() {
-//}`
-//	walker := parseCode(t, code)
-//	structType := walker.GetTypes()[0]
-//	methods := structType.GetMethods()
-//	assert.Equal(t, 1, len(methods))
-//	assert.Equal(t, "Method", methods[0].GetName())
-//}

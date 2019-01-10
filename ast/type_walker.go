@@ -23,7 +23,7 @@ type TypeWalker interface {
 }
 
 type typeWalker struct {
-	abstractWalker
+	AbstractWalker
 	types         []*typeInfo
 	typeInfoStack stack.Stack
 	opsStack      stack.Stack
@@ -93,18 +93,10 @@ func (walker *typeWalker) EndWalkFuncType(funcType *ast.FuncType) {
 }
 
 func NewTypeWalker() TypeWalker {
-	return newTypeWalkerWithPhysicalPath("")
-}
-
-func newTypeWalkerWithPhysicalPath(physicalPath string) TypeWalker {
 	walker := &typeWalker{
 		types: []*typeInfo{},
-		abstractWalker: abstractWalker{
-			osEnv:        NewGoPathEnv(),
-			physicalPath: physicalPath,
-		},
 	}
-	walker.abstractWalker.actualWalker = walker
+	walker.AbstractWalker = *newAbstractWalker(walker)
 	return walker
 }
 

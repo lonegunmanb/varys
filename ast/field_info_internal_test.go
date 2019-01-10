@@ -18,7 +18,7 @@ type Struct struct {
 	FileSet token.FileSet
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	structInfo := walker.Types()[0]
 	field1 := structInfo.Fields[0]
 	field2 := structInfo.Fields[1]
@@ -40,7 +40,7 @@ type Struct struct {
 	Err *scanner.Error
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	assertPkgPath(t, walker, "go/scanner")
 }
 
@@ -54,7 +54,7 @@ type Struct struct {
 	_type types.Type
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	assertPkgPath(t, walker, "go/types")
 }
 
@@ -68,7 +68,7 @@ type Struct struct {
 	Err [1]scanner.Error
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	assertPkgPath(t, walker, "go/scanner")
 }
 
@@ -82,7 +82,7 @@ type Struct struct {
 	Err []*scanner.Error
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	assertPkgPath(t, walker, "go/scanner")
 }
 
@@ -97,7 +97,7 @@ type Struct struct {
 	Data map[*token.FileSet]*scanner.Error
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	structInfo := walker.Types()[0]
 	field1 := structInfo.Fields[0]
 	packagePaths := field1.GetDepPkgPaths()
@@ -118,7 +118,7 @@ type Struct struct {
 	Data map[*token.FileSet]map[*scanner.Error]*types.Type
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	structInfo := walker.Types()[0]
 	field1 := structInfo.Fields[0]
 	packagePaths := field1.GetDepPkgPaths()
@@ -138,7 +138,7 @@ type Struct struct {
 	}
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	assertPkgPath(t, walker, testPkgPath)
 }
 
@@ -152,7 +152,7 @@ type Struct struct {
 	}
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	assertPkgPath(t, walker, testPkgPath)
 }
 
@@ -164,7 +164,7 @@ type Struct struct {
 	Name string
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	structInfo := walker.Types()[0]
 	field1 := structInfo.Fields[0]
 	assert.Equal(t, 0, len(field1.GetDepPkgPaths()))
@@ -178,7 +178,7 @@ type Struct struct {
 	FileSetChan chan *token.FileSet
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	assertPkgPath(t, walker, "go/token")
 }
 
@@ -194,7 +194,7 @@ type Struct struct {
 	Func func(fileSet *token.FileSet, e *scanner.Error) (types.Type, error)
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	structInfo := walker.Types()[0]
 	depPkgPaths := structInfo.GetDepPkgPaths("")
 	assert.Equal(t, 3, len(depPkgPaths))
@@ -213,7 +213,7 @@ type Struct struct {
 	types.Named
 }
 `
-	walker := parseCode(t, sourceCode)
+	walker := parseCodeWithTypeWalker(t, sourceCode)
 	structInfo := walker.Types()[0]
 	depPkgPaths := structInfo.GetDepPkgPaths("")
 	assert.Equal(t, 1, len(depPkgPaths))
