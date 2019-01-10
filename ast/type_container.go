@@ -7,7 +7,7 @@ import (
 
 var factories = make(map[string]func() interface{})
 
-func getOrRegister(interfaceType interface{}, factory func() interface{}) interface{} {
+func GetOrRegister(interfaceType interface{}, factory func() interface{}) interface{} {
 	typeName := getTypeName(interfaceType)
 	f, ok := factories[typeName]
 	if !ok {

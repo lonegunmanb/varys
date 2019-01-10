@@ -71,7 +71,7 @@ func (*AbstractWalker) analyzeTypes(pkgPath string, fileSet *token.FileSet,
 
 func (*AbstractWalker) getFiles(dirPath string, ignorePattern string) ([]FileInfo, error) {
 	fileRetrieverKey := (*FileRetriever)(nil)
-	fileRetriever := getOrRegister(fileRetrieverKey, func() interface{} {
+	fileRetriever := GetOrRegister(fileRetrieverKey, func() interface{} {
 		return NewFileRetriever()
 	}).(FileRetriever)
 
@@ -181,7 +181,7 @@ func parseTypes(fileMap map[string][]*ast.File, fSet *token.FileSet, osEnv GoPat
 }
 
 func getOsEnv() GoPathEnv {
-	return getOrRegister((*GoPathEnv)(nil), func() interface{} {
+	return GetOrRegister((*GoPathEnv)(nil), func() interface{} {
 		return NewGoPathEnv()
 	}).(GoPathEnv)
 }
