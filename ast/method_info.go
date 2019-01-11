@@ -1,13 +1,21 @@
 package ast
 
+import "go/types"
+
 type MethodInfo interface {
 	GetName() string
 	GetReceiver() TypeInfo
+	GetReturnTypes() []types.Type
 }
 
 type methodInfo struct {
-	receiver TypeInfo
-	name     string
+	receiver    TypeInfo
+	returnTypes []types.Type
+	name        string
+}
+
+func (m *methodInfo) GetReturnTypes() []types.Type {
+	return m.returnTypes
 }
 
 func (m *methodInfo) GetName() string {

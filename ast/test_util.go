@@ -15,8 +15,8 @@ func parseCodeWithTypeWalker(t *testing.T, sourceCode string) *typeWalker {
 	return typeWalker
 }
 
-//func parseCodeWithFuncWalker(t *testing.T, sourceCode string, ) *funcWalker {
-//	funcWalker := NewFuncWalker()
+//func parseCodeWithFuncWalker(t *testing.T, sourceCode string, retriever TypeRetriever) *funcWalker {
+//	funcWalker := NewFuncWalker(retriever).(*funcWalker)
 //	parseCode(t, sourceCode, &funcWalker.AbstractWalker)
 //	return funcWalker
 //}
@@ -29,4 +29,14 @@ func parseCode(t *testing.T, sourceCode string, walker *AbstractWalker) {
 	walker.osEnv = mockOsEnv
 	err := walker.Parse(testPkgPath, sourceCode)
 	assert.Nil(t, err)
+}
+
+//noinspection GoUnusedFunction
+func assertSame(t *testing.T, p1 interface{}, p2 interface{}) {
+	assert.True(t, p1 == p2)
+}
+
+//noinspection GoUnusedFunction
+func assertNotSame(t *testing.T, p1 interface{}, p2 interface{}) {
+	assert.False(t, p1 == p2)
 }

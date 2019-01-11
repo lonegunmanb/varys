@@ -1,7 +1,11 @@
 package ast
 
-import "go/ast"
+import (
+	"go/ast"
+	"go/types"
+)
 
-type ReceiverTypeRetriever interface {
-	GetType(expr ast.Expr) TypeInfo
+type TypeRetriever interface {
+	GetTypeInfo(expr ast.Expr) TypeInfo
+	GetType(expr ast.Expr) types.Type
 }
