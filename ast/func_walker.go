@@ -38,25 +38,34 @@ func (walker *funcWalker) WalkFuncDecl(funcDecl *ast.FuncDecl) bool {
 	if isMethod {
 		funcType := funcDecl.Type
 		methodInfo := &methodInfo{
-			name:        funcDecl.Name.Name,
-			receiver:    walker.getTypeInfo(funcDecl.Recv.List[0].Type),
-			returnTypes: walker.analyzeReturnTypes(funcType),
+			name:     funcDecl.Name.Name,
+			receiver: walker.getTypeInfo(funcDecl.Recv.List[0].Type),
 		}
+		methodInfo.returnFields = walker.analyzeReturnTypes(funcType, methodInfo)
 		walker.methods = append(walker.methods, methodInfo)
 	}
 	return false
 }
 
-func (walker *funcWalker) analyzeReturnTypes(funcType *ast.FuncType) []types.Type {
-	returnTypes := make([]types.Type, 0, len(funcType.Results.List))
+func (walker *funcWalker) analyzeReturnTypes(funcType *ast.FuncType, methodInfo MethodInfo) []FieldInfo {
+	returnTypes := make([]FieldInfo, 0, len(funcType.Results.List))
 	linq.From(funcType.Results.List).SelectMany(func(field interface{}) linq.Query {
 		f := field.(*ast.Field)
 		fieldType := walker.getType(f.Type)
 		if len(f.Names) == 0 {
-			return linq.Repeat(fieldType, 1)
+			return linq.Repeat(&fieldInfo{
+				Type:                fieldType,
+				ReferenceFromMethod: methodInfo,
+				ReferenceFromType:   methodInfo.GetReceiver(),
+			}, 1)
 		}
-		return linq.From(f.Names).Select(func(_ interface{}) interface{} {
-			return fieldType
+		return linq.From(f.Names).Select(func(name interface{}) interface{} {
+			return &fieldInfo{
+				Type:                fieldType,
+				ReferenceFromMethod: methodInfo,
+				ReferenceFromType:   methodInfo.GetReceiver(),
+				Name:                name.(*ast.Ident).Name,
+			}
 		})
 	}).ToSlice(&returnTypes)
 	return returnTypes

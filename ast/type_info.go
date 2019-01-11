@@ -117,10 +117,10 @@ func (typeInfo *typeInfo) addFieldInfos(field *ast.Field, fieldType types.Type) 
 	names := field.Names
 	for _, fieldName := range names {
 		typeInfo.Fields = append(typeInfo.Fields, &fieldInfo{
-			Name:          fieldName.Name,
-			Type:          fieldType,
-			Tag:           getTag(field),
-			ReferenceFrom: typeInfo,
+			Name:              fieldName.Name,
+			Type:              fieldType,
+			Tag:               getTag(field),
+			ReferenceFromType: typeInfo,
 		})
 	}
 }

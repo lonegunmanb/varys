@@ -59,9 +59,10 @@ func TestWalkFuncDecl(t *testing.T) {
 	method := methods[0]
 	assert.Equal(t, name, method.GetName())
 	assertSame(t, stubTypeInfo, method.GetReceiver())
-	returnTypes := method.GetReturnTypes()
-	assert.Equal(t, 1, len(method.GetReturnTypes()))
-	assertSame(t, expectedReturnType, returnTypes[0])
+	returnTypes := method.GetReturnFields()
+	assert.Equal(t, 1, len(method.GetReturnFields()))
+	returnType := returnTypes[0]
+	assertSame(t, expectedReturnType, returnType.GetType())
 }
 
 func TestMultipleNameReturnField(t *testing.T) {
@@ -70,6 +71,10 @@ func TestMultipleNameReturnField(t *testing.T) {
 	mockTypeRetriever := NewMockTypeRetriever(ctrl)
 	stubReturnTypeExpr := &ast.InterfaceType{}
 	expectedReturnType := &types.Interface{}
+	typeInfo := &typeInfo{}
+	methodInfo := &methodInfo{
+		receiver: typeInfo,
+	}
 	name1 := "name1"
 	name2 := "name2"
 	mockTypeRetriever.EXPECT().GetType(gomock.Eq(stubReturnTypeExpr)).Times(1).Return(expectedReturnType)
@@ -87,8 +92,15 @@ func TestMultipleNameReturnField(t *testing.T) {
 		},
 	}
 	sut := NewFuncWalker(mockTypeRetriever).(*funcWalker)
-	returnTypes := sut.analyzeReturnTypes(returnType)
+	returnTypes := sut.analyzeReturnTypes(returnType, methodInfo)
+
 	assert.Equal(t, 2, len(returnTypes))
-	assertSame(t, expectedReturnType, returnTypes[0])
-	assertSame(t, expectedReturnType, returnTypes[1])
+	assertSame(t, expectedReturnType, returnTypes[0].GetType())
+	assert.Equal(t, name1, returnTypes[0].GetName())
+	assertSame(t, methodInfo, returnTypes[0].GetReferenceFromMethod())
+	assertSame(t, typeInfo, returnTypes[0].GetReferenceFromType())
+	assertSame(t, expectedReturnType, returnTypes[1].GetType())
+	assert.Equal(t, name2, returnTypes[1].GetName())
+	assertSame(t, methodInfo, returnTypes[1].GetReferenceFromMethod())
+	assertSame(t, typeInfo, returnTypes[1].GetReferenceFromType())
 }

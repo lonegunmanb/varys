@@ -9,15 +9,25 @@ type FieldInfo interface {
 	GetName() string
 	GetType() types.Type
 	GetTag() string
-	GetReferenceFrom() TypeInfo
+	GetReferenceFromType() TypeInfo
+	GetReferenceFromMethod() MethodInfo
 	GetDepPkgPaths() []string
 }
 
 type fieldInfo struct {
-	Name          string
-	Type          types.Type
-	Tag           string
-	ReferenceFrom *typeInfo
+	Name                string
+	Type                types.Type
+	Tag                 string
+	ReferenceFromType   TypeInfo
+	ReferenceFromMethod MethodInfo
+}
+
+func (f *fieldInfo) GetReferenceFromType() TypeInfo {
+	return f.ReferenceFromType
+}
+
+func (f *fieldInfo) GetReferenceFromMethod() MethodInfo {
+	return f.ReferenceFromMethod
 }
 
 func (f *fieldInfo) GetName() string {
@@ -30,10 +40,6 @@ func (f *fieldInfo) GetType() types.Type {
 
 func (f *fieldInfo) GetTag() string {
 	return f.Tag
-}
-
-func (f *fieldInfo) GetReferenceFrom() TypeInfo {
-	return f.ReferenceFrom
 }
 
 func (f *fieldInfo) GetDepPkgPaths() []string {
@@ -56,11 +62,11 @@ func getDepPkgPaths(fieldInfo FieldInfo, t types.Type) []string {
 		}
 	case *types.Struct:
 		{
-			return []string{fieldInfo.GetReferenceFrom().GetPkgPath()}
+			return []string{fieldInfo.GetReferenceFromType().GetPkgPath()}
 		}
 	case *types.Interface:
 		{
-			return []string{fieldInfo.GetReferenceFrom().GetPkgPath()}
+			return []string{fieldInfo.GetReferenceFromType().GetPkgPath()}
 		}
 	case *types.Pointer:
 		{
