@@ -1,5 +1,7 @@
 package ast
 
+//go:generate mockgen -source=./gopath.go -package=ast -destination=./mock_gopathenv.go
+
 import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

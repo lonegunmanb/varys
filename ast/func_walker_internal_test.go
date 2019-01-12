@@ -1,6 +1,6 @@
 package ast
 
-//go:generate mockgen -package=ast -destination=./mock_type_retriever.go github.com/lonegunmanb/varys/ast TypeRetriever
+//go:generate mockgen -source=./type_retriever.go -package=ast -destination=./mock_type_retriever.go
 
 import (
 	"github.com/golang/mock/gomock"

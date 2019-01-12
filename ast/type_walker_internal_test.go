@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-//go:generate mockgen -package=ast -destination=./mock_type_walker.go github.com/lonegunmanb/varys/ast TypeWalker
+//go:generate mockgen -source=./type_walker.go -package=ast -destination=./mock_type_walker.go
 func TestFuncDecl(t *testing.T) {
 	sourceCode := `
 package ast
