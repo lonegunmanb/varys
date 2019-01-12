@@ -3,13 +3,19 @@ package ast
 type MethodInfo interface {
 	GetName() string
 	GetReceiver() TypeInfo
+	GetParameterFields() []FieldInfo
 	GetReturnFields() []FieldInfo
 }
 
 type methodInfo struct {
-	receiver     TypeInfo
-	returnFields []FieldInfo
-	name         string
+	receiver        TypeInfo
+	parameterFields []FieldInfo
+	returnFields    []FieldInfo
+	name            string
+}
+
+func (m *methodInfo) GetParameterFields() []FieldInfo {
+	return m.parameterFields
 }
 
 func (m *methodInfo) GetReturnFields() []FieldInfo {
