@@ -1,36 +1,40 @@
 package ast
 
 import (
-	"github.com/ahmetb/go-linq"
+	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
-func TestStructName(t *testing.T) {
-	sourceCode := `
-package ast
-type Struct struct{
-}
-`
-	walker := parseCodeWithTypeWalker(t, sourceCode)
-	typeInfo := walker.Types()[0]
-	assert.Equal(t, "Struct", typeInfo.Name)
+type typeInfoInternalTestSuite struct {
+	suite.Suite
+	walker *typeWalker
 }
 
-func TestGetStructPkgPath(t *testing.T) {
-	sourceCode := `
-package ast
-type Struct struct{
-}
-`
-	walker := parseCodeWithTypeWalker(t, sourceCode)
-	typeInfo := walker.Types()[0]
-	assert.Equal(t, testPkgPath, typeInfo.PkgPath)
-	assert.Equal(t, "ast", typeInfo.PkgName)
+func TestTypeInfoTestSuite(t *testing.T) {
+	suite.Run(t, &typeInfoInternalTestSuite{})
 }
 
-func TestDepSamePkg(t *testing.T) {
-	sourceCode := `
+func (suite *typeInfoInternalTestSuite) SetupTest() {
+	suite.walker = prepareTypeWalker(suite.T())
+}
+
+func (suite *typeInfoInternalTestSuite) TestStructInfo() {
+	testDatas := []*typeInfoTestData{
+		{
+			given: "given simple struct code",
+			sourceCode: `
+	package ast
+	type Struct struct{
+	}
+	`,
+			structName: "Struct",
+			pkgName:    "ast",
+		},
+		{
+			given: "given struct with dep in same package",
+			sourceCode: `
 package ast
 type Struct struct {
 s Struct2
@@ -38,26 +42,53 @@ s Struct2
 type Struct2 struct {
 
 }
-`
-	walker := parseCodeWithTypeWalker(t, sourceCode)
-	typeInfo := walker.Types()[0]
-	assert.Equal(t, testPkgPath, typeInfo.PkgPath)
-}
-
-func TestPackageNameDifferentWithPkgPath(t *testing.T) {
-	sourceCode := `
+`,
+			structName: "Struct",
+			pkgName:    "ast",
+		},
+		{
+			given: "given struct with package name different with pkg path",
+			sourceCode: `
 package test
 type Struct struct{
 }
-`
-	walker := parseCodeWithTypeWalker(t, sourceCode)
-	typeInfo := walker.Types()[0]
-	assert.Equal(t, testPkgPath, typeInfo.PkgPath)
-	assert.Equal(t, "test", typeInfo.PkgName)
+`,
+			structName: "Struct",
+			pkgName:    "test",
+		},
+	}
+	for _, data := range testDatas {
+		suite.testStructInfo(data)
+	}
 }
 
-func TestGetStructDepImportPkgPaths(t *testing.T) {
-	sourceCode := `
+type typeInfoTestData struct {
+	given      string
+	sourceCode string
+	structName string
+	pkgName    string
+}
+
+func (suite *typeInfoInternalTestSuite) testStructInfo(testData *typeInfoTestData) {
+	Convey(testData.given, suite.T(), func() {
+		suite.SetupTest()
+		sourceCode := testData.sourceCode
+		Convey("when walker parse source code", func() {
+			err := suite.walker.Parse(testPkgPath, sourceCode)
+			Convey("struct name should equal to expected", func() {
+				So(err, ShouldBeNil)
+				typeInfo := suite.walker.Types()[0]
+				So(typeInfo.Name, ShouldEqual, testData.structName)
+				So(typeInfo.PkgPath, ShouldEqual, testPkgPath)
+				So(typeInfo.PkgName, ShouldEqual, testData.pkgName)
+			})
+		})
+	})
+}
+
+func (suite *typeInfoInternalTestSuite) TestGetStructDepImportPkgPaths() {
+	Convey("given a complex struct", suite.T(), func() {
+		sourceCode := `
 package ast
 import (
 "go/scanner"
@@ -81,12 +112,18 @@ type Struct struct {
 	Map map[*scanner.Error]*token.FileSet //dep go/scanner, go/token
 }
 `
-	walker := parseCodeWithTypeWalker(t, sourceCode)
-	structInfo := walker.Types()[0]
-	depPkgPaths := structInfo.GetDepPkgPaths("")
-	assert.Equal(t, 2, len(depPkgPaths))
-	assert.True(t, linq.From(depPkgPaths).Contains("go/scanner"))
-	assert.True(t, linq.From(depPkgPaths).Contains("go/token"))
+		Convey("when walker parse source code", func() {
+			err := suite.walker.Parse(testPkgPath, sourceCode)
+			Convey("type's dep paths should equal to expected", func() {
+				So(err, ShouldBeNil)
+				structInfo := suite.walker.Types()[0]
+				depPkgPaths := structInfo.GetDepPkgPaths("")
+				So(len(depPkgPaths), ShouldEqual, 2)
+				So(depPkgPaths, ShouldContain, "go/scanner")
+				So(depPkgPaths, ShouldContain, "go/token")
+			})
+		})
+	})
 }
 
 func TestIsNotTestFile(t *testing.T) {

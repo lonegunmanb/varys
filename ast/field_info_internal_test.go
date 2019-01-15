@@ -1,31 +1,25 @@
 package ast
 
 import (
-	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
-type FieldInfoInternalTestSuite struct {
+type fieldInfoInternalTestSuite struct {
 	suite.Suite
 	walker *typeWalker
 }
 
 func TestFieldInfoInternalTestSuite(t *testing.T) {
-	suite.Run(t, new(FieldInfoInternalTestSuite))
+	suite.Run(t, new(fieldInfoInternalTestSuite))
 }
 
-func (suite *FieldInfoInternalTestSuite) SetupTest() {
-	suite.walker = NewTypeWalker().(*typeWalker)
-	suite.walker.physicalPath = testPhysicalPath
-	ctrl := gomock.NewController(suite.T())
-	mockOsEnv := NewMockGoPathEnv(ctrl)
-	mockOsEnv.EXPECT().GetPkgPath(gomock.Eq(testPhysicalPath)).AnyTimes().Return(testPkgPath, nil)
-	suite.walker.osEnv = mockOsEnv
+func (suite *fieldInfoInternalTestSuite) SetupTest() {
+	suite.walker = prepareTypeWalker(suite.T())
 }
 
-func (suite *FieldInfoInternalTestSuite) TestGetNamedTypeStructFieldPkgPath() {
+func (suite *fieldInfoInternalTestSuite) TestGetNamedTypeStructFieldPkgPath() {
 	Convey("given struct with named type struct field", suite.T(), func() {
 		sourceCode := `
 package ast
@@ -59,11 +53,11 @@ func lengthOfDepPkgPaths(fieldInfo FieldInfo) int {
 	return len(fieldInfo.GetDepPkgPaths())
 }
 
-func (suite *FieldInfoInternalTestSuite) TestStructFieldPkgPath() {
+func (suite *fieldInfoInternalTestSuite) TestStructFieldPkgPath() {
 	table := []struct {
 		given      string
 		sourceCode string
-		pkgPaths   []string
+		pkgPaths   []interface{}
 	}{
 		{
 			given: "given pointer to named type",
@@ -76,7 +70,7 @@ type Struct struct {
 	Err *scanner.Error
 }
 `,
-			pkgPaths: []string{"go/scanner"}},
+			pkgPaths: []interface{}{"go/scanner"}},
 		{
 			given: "given slice of named type",
 			sourceCode: `
@@ -88,7 +82,7 @@ type Struct struct {
 	_types []types.Type
 }
 `,
-			pkgPaths: []string{"go/types"},
+			pkgPaths: []interface{}{"go/types"},
 		},
 		{
 			given: "given array of named type",
@@ -101,7 +95,7 @@ type Struct struct {
 	Err [1]scanner.Error
 }
 `,
-			pkgPaths: []string{"go/scanner"},
+			pkgPaths: []interface{}{"go/scanner"},
 		},
 		{
 			given: "given slice of pointer to named type",
@@ -114,7 +108,7 @@ type Struct struct {
 	Err []*scanner.Error
 }
 `,
-			pkgPaths: []string{"go/scanner"},
+			pkgPaths: []interface{}{"go/scanner"},
 		},
 		{
 			given: "given map from named type to another named type",
@@ -128,7 +122,7 @@ type Struct struct {
 	Data map[*token.FileSet]*scanner.Error
 }
 `,
-			pkgPaths: []string{"go/token", "go/scanner"},
+			pkgPaths: []interface{}{"go/token", "go/scanner"},
 		},
 		{
 			given: "given map from named type to another map from named type to the third named type",
@@ -143,7 +137,7 @@ type Struct struct {
 	Data map[*token.FileSet]map[*scanner.Error]*types.Type
 }
 `,
-			pkgPaths: []string{"go/token", "go/scanner", "go/types"},
+			pkgPaths: []interface{}{"go/token", "go/scanner", "go/types"},
 		},
 		{
 			given: "given nested struct",
@@ -156,7 +150,7 @@ type Struct struct {
 	}
 }
 `,
-			pkgPaths: []string{testPkgPath},
+			pkgPaths: []interface{}{testPkgPath},
 		},
 		{
 			given: "given nested interface",
@@ -169,7 +163,7 @@ type Struct struct {
 	}
 }
 `,
-			pkgPaths: []string{testPkgPath},
+			pkgPaths: []interface{}{testPkgPath},
 		},
 		{
 			given: "given builtin type",
@@ -180,7 +174,7 @@ type Struct struct {
 	Name string
 }
 `,
-			pkgPaths: []string{},
+			pkgPaths: []interface{}{},
 		},
 		{
 			given: "given channel of named type",
@@ -191,7 +185,7 @@ type Struct struct {
 	FileSetChan chan *token.FileSet
 }
 `,
-			pkgPaths: []string{"go/token"},
+			pkgPaths: []interface{}{"go/token"},
 		},
 		{
 			given: "given func type",
@@ -206,7 +200,7 @@ type Struct struct {
 	Func func(fileSet *token.FileSet, e *scanner.Error) (types.Type, error)
 }
 `,
-			pkgPaths: []string{
+			pkgPaths: []interface{}{
 				"go/token",
 				"go/scanner",
 				"go/types",
@@ -218,7 +212,7 @@ type Struct struct {
 	}
 }
 
-func (suite *FieldInfoInternalTestSuite) testStructFieldPkgPath(given string, sourceCode string, pkgPaths ...string) {
+func (suite *fieldInfoInternalTestSuite) testStructFieldPkgPath(given string, sourceCode string, pkgPaths ...interface{}) {
 	Convey(given, suite.T(), func() {
 		suite.SetupTest()
 		code := sourceCode
@@ -226,13 +220,13 @@ func (suite *FieldInfoInternalTestSuite) testStructFieldPkgPath(given string, so
 			err := suite.walker.Parse(testPkgPath, code)
 			Convey("the field pkg path should be right", func() {
 				So(err, ShouldBeNil)
-				SoFieldPkgPathShouldEqual(suite.walker, pkgPaths...)
+				So(suite.walker, shouldFieldPkgPathEqual, pkgPaths...)
 			})
 		})
 	})
 }
 
-func (suite *FieldInfoInternalTestSuite) TestFuncEmbeddedTypePkgPath() {
+func (suite *fieldInfoInternalTestSuite) TestFuncEmbeddedTypePkgPath() {
 	Convey("given struct embed a named type struct", suite.T(), func() {
 		sourceCode := `
 package ast
@@ -256,12 +250,14 @@ type Struct struct {
 	})
 }
 
-func SoFieldPkgPathShouldEqual(walker *typeWalker, pkgPaths ...string) {
+func shouldFieldPkgPathEqual(actual interface{}, expected ...interface{}) string {
+	walker := actual.(*typeWalker)
 	structInfo := walker.Types()[0]
 	field1 := structInfo.Fields[0]
 	packagePaths := field1.GetDepPkgPaths()
-	So(lengthOfDepPkgPaths(field1), ShouldEqual, len(pkgPaths))
+	So(lengthOfDepPkgPaths(field1), ShouldEqual, len(expected))
 	for i, path := range packagePaths {
-		So(path, ShouldEqual, pkgPaths[i])
+		So(path, ShouldEqual, expected[i])
 	}
+	return ""
 }

@@ -5,6 +5,7 @@ package ast
 import (
 	"github.com/golang/mock/gomock"
 	"github.com/lonegunmanb/johnnie"
+	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	"go/ast"
 	"go/types"
@@ -26,55 +27,96 @@ import (
 //	assert.Equal(t, "Method", methods[0].GetName())
 //}
 
+type walkFuncDeclTestData struct {
+	name                  string
+	typeInfo              *typeInfo
+	receiverTypeExpr      *ast.StructType
+	parameterTypeExpr     *ast.BasicLit
+	returnTypeExpr        *ast.InterfaceType
+	expectedParameterType *types.Basic
+	expectedReturnType    *types.Interface
+}
+
 func TestWalkFuncDecl(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	name := "name"
-	stubTypeInfo := &typeInfo{}
-	stubReceiverTypeExpr := &ast.StructType{}
-	stubParameterTypeExpr := &ast.BasicLit{}
-	stubReturnTypeExpr := &ast.InterfaceType{}
-	expectedPameterType := &types.Basic{}
-	expectedReturnType := &types.Interface{}
-	mockTypeRetriever := NewMockTypeRetriever(ctrl)
-	mockTypeRetriever.EXPECT().GetTypeInfo(gomock.Eq(stubReceiverTypeExpr)).Times(1).Return(stubTypeInfo)
-	mockTypeRetriever.EXPECT().GetType(gomock.Eq(stubReturnTypeExpr)).Times(1).Return(expectedReturnType)
-	mockTypeRetriever.EXPECT().GetType(gomock.Eq(stubParameterTypeExpr)).Times(1).Return(expectedPameterType)
+	Convey("given func decl", t, func() {
+		testData := &walkFuncDeclTestData{
+			name:                  "name",
+			typeInfo:              &typeInfo{},
+			receiverTypeExpr:      &ast.StructType{},
+			parameterTypeExpr:     &ast.BasicLit{},
+			returnTypeExpr:        &ast.InterfaceType{},
+			expectedParameterType: &types.Basic{},
+			expectedReturnType:    &types.Interface{},
+		}
+		ctrl, mockTypeRetriever := setupMockTypeRetriever(t, testData)
+		defer ctrl.Finish()
+		funcDecl := createFuncDecl(testData)
+		sut := NewFuncWalker(mockTypeRetriever)
+		Convey("when visit func decl with func walker", func() {
+			johnnie.Visit(sut, funcDecl)
+			Convey("then we gather correct methodInfo", func() {
+				So(sut, shouldGatherExpectedMethodInfo, testData)
+			})
+		})
+	})
+}
+
+func shouldGatherExpectedMethodInfo(actual interface{}, expected ...interface{}) string {
+	sut := actual.(FuncWalker)
+	testData := expected[0].(*walkFuncDeclTestData)
+	methods := sut.GetMethods()
+	So(len(methods), ShouldEqual, 1)
+	method := methods[0]
+	So(method.GetName(), ShouldEqual, testData.name)
+	So(method.GetReceiver(), shouldBeSame, testData.typeInfo)
+	parameterFields := method.GetParameterFields()
+	parameterField := parameterFields[0]
+	So(len(parameterFields), ShouldEqual, 1)
+	So(parameterField.GetType(), ShouldEqual, testData.expectedParameterType)
+	returnTypes := method.GetReturnFields()
+	So(len(returnTypes), ShouldEqual, 1)
+	So(returnTypes[0].GetType(), ShouldEqual, testData.expectedReturnType)
+	return ""
+}
+
+func shouldBeSame(actual interface{}, expected ...interface{}) string {
+	if len(expected) == 1 && actual == expected[0] {
+		return ""
+	}
+	return "not same pointer"
+}
+
+func createFuncDecl(testData *walkFuncDeclTestData) *ast.FuncDecl {
 	funcDecl := &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
-				{Type: stubReceiverTypeExpr},
+				{Type: testData.receiverTypeExpr},
 			},
 		},
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{
 				List: []*ast.Field{
-					{Type: stubParameterTypeExpr},
+					{Type: testData.parameterTypeExpr},
 				},
 			},
 			Results: &ast.FieldList{
 				List: []*ast.Field{
-					{Type: stubReturnTypeExpr},
+					{Type: testData.returnTypeExpr},
 				},
 			},
 		},
-		Name: &ast.Ident{Name: name},
+		Name: &ast.Ident{Name: testData.name},
 	}
-	sut := NewFuncWalker(mockTypeRetriever)
-	johnnie.Visit(sut, funcDecl)
-	methods := sut.GetMethods()
-	assert.Equal(t, 1, len(methods))
-	method := methods[0]
-	assert.Equal(t, name, method.GetName())
-	assertSame(t, stubTypeInfo, method.GetReceiver())
-	parameterFields := method.GetParameterFields()
-	parameterField := parameterFields[0]
-	assertSame(t, expectedPameterType, parameterField.GetType())
-	assert.Equal(t, 1, len(parameterFields))
-	returnTypes := method.GetReturnFields()
-	assert.Equal(t, 1, len(returnTypes))
-	returnType := returnTypes[0]
-	assertSame(t, expectedReturnType, returnType.GetType())
+	return funcDecl
+}
+
+func setupMockTypeRetriever(t *testing.T, testData *walkFuncDeclTestData) (*gomock.Controller, *MockTypeRetriever) {
+	ctrl := gomock.NewController(t)
+	mockTypeRetriever := NewMockTypeRetriever(ctrl)
+	mockTypeRetriever.EXPECT().GetTypeInfo(gomock.Eq(testData.receiverTypeExpr)).Times(1).Return(testData.typeInfo)
+	mockTypeRetriever.EXPECT().GetType(gomock.Eq(testData.returnTypeExpr)).Times(1).Return(testData.expectedReturnType)
+	mockTypeRetriever.EXPECT().GetType(gomock.Eq(testData.parameterTypeExpr)).Times(1).Return(testData.expectedParameterType)
+	return ctrl, mockTypeRetriever
 }
 
 func TestMultipleNameFields(t *testing.T) {

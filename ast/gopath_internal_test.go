@@ -2,6 +2,7 @@ package ast
 
 import (
 	"github.com/golang/mock/gomock"
+	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -24,13 +25,20 @@ func TestGetPkgPathFromSystemPathUsingGoPath(t *testing.T) {
 }
 
 func TestGetPkgPathInWindows(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mockEnv := NewMockGoPathEnv(ctrl)
-	mockEnv.EXPECT().IsWindows().AnyTimes().Return(true)
-	mockEnv.EXPECT().GetGoPath().AnyTimes().Return("c:\\go")
-	pkgPath, err := getPkgPath(mockEnv, "c:\\go\\src\\github.com\\lonegunmanb\\syringe")
-	assert.Nil(t, err)
-	assert.Equal(t, expectedPkgName, pkgPath)
+	Convey("given windows env", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockEnv := NewMockGoPathEnv(ctrl)
+		mockEnv.EXPECT().IsWindows().MinTimes(1).Return(true)
+		mockEnv.EXPECT().GetGoPath().MinTimes(1).Return("c:\\go")
+		Convey("when get pkg path from windows go src path", func() {
+			pkgPath, err := getPkgPath(mockEnv, "c:\\go\\src\\github.com\\lonegunmanb\\syringe")
+			Convey("pkg path should equal to expected", func() {
+				So(err, ShouldBeNil)
+				So(pkgPath, ShouldEqual, expectedPkgName)
+			})
+		})
+	})
 }
 
 func TestConcatFileNameWithPath(t *testing.T) {
