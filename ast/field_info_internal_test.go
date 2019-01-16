@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -39,9 +40,9 @@ type Struct struct {
 				structInfo := suite.walker.Types()[0]
 				errField := structInfo.Fields[0]
 				fileSetField := structInfo.Fields[1]
-				So(lengthOfDepPkgPaths(errField), ShouldEqual, 1)
+				So(errField, shouldHasAsManyDepPkgPathAs, 1)
 				So(errField.GetDepPkgPaths()[0], ShouldEqual, "go/scanner")
-				So(lengthOfDepPkgPaths(fileSetField), ShouldEqual, 1)
+				So(fileSetField, shouldHasAsManyDepPkgPathAs, 1)
 				So(fileSetField.GetDepPkgPaths()[0], ShouldEqual, "go/token")
 			})
 
@@ -49,8 +50,14 @@ type Struct struct {
 	})
 }
 
-func lengthOfDepPkgPaths(fieldInfo FieldInfo) int {
-	return len(fieldInfo.GetDepPkgPaths())
+func shouldHasAsManyDepPkgPathAs(actual interface{}, expected ...interface{}) string {
+	fieldInfo := actual.(FieldInfo)
+	expectedLength := expected[0].(int)
+	actual = len(fieldInfo.GetDepPkgPaths())
+	if actual != expectedLength {
+		return fmt.Sprintf("expected %d, got %d", expectedLength, actual)
+	}
+	return ""
 }
 
 func (suite *fieldInfoInternalTestSuite) TestStructFieldPkgPath() {
@@ -255,7 +262,7 @@ func shouldFieldPkgPathEqual(actual interface{}, expected ...interface{}) string
 	structInfo := walker.Types()[0]
 	field1 := structInfo.Fields[0]
 	packagePaths := field1.GetDepPkgPaths()
-	So(lengthOfDepPkgPaths(field1), ShouldEqual, len(expected))
+	So(field1, shouldHasAsManyDepPkgPathAs, len(expected))
 	for i, path := range packagePaths {
 		So(path, ShouldEqual, expected[i])
 	}
