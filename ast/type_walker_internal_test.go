@@ -12,8 +12,6 @@ import (
 	"testing"
 )
 
-//go:generate mockgen -source=./type_walker.go -package=ast -destination=./mock_type_walker.go
-
 type typeWalkerTestSuite struct {
 	suite.Suite
 	walker *typeWalker
