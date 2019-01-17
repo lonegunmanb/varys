@@ -4,6 +4,8 @@ go:
   - "1.10.x"
 
 install:
+  - go get github.com/golang/mock/gomock
+  - go install github.com/golang/mock/mockgen
   - go generate ./...
 
 script: go test -v github.com/lonegunmanb/varys/...
