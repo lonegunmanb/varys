@@ -1,0 +1,9 @@
+language: go
+
+go:
+  - "1.10.x"
+
+install:
+  - go generate ./...
+
+script: go test -v github.com/lonegunmanb/varys/...
