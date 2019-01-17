@@ -3,6 +3,12 @@ language: go
 go:
   - "1.10.x"
 
+addons:
+  sonarcloud:
+    organization: "lonegunmanb_varys"
+    token:
+      secure: $SONAR_TOKEN
+
 install:
   - go get github.com/golang/mock/gomock
   - go install github.com/golang/mock/mockgen
@@ -10,3 +16,6 @@ install:
   - go get -t -v ./...
 
 script: go test -v github.com/lonegunmanb/varys/...
+
+after_script:
+  - sonar-scanner -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io
