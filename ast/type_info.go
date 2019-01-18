@@ -71,9 +71,6 @@ func (typeInfo *typeInfo) GetEmbeddedTypes() []EmbeddedType {
 }
 
 func (typeInfo *typeInfo) GetFullName() string {
-	if typeInfo.PkgPath == "" {
-		return typeInfo.Name
-	}
 	return fmt.Sprintf("%s.%s", typeInfo.PkgPath, typeInfo.Name)
 }
 
@@ -97,9 +94,6 @@ func (typeInfo *typeInfo) GetDepPkgPaths(fieldTagFilter string) []string {
 			return linq.From(paths)
 		})).Distinct().Where(func(path interface{}) bool {
 		p := path.(string)
-		if typeInfo.GetPkgPath() == "" {
-			return p != typeInfo.GetPkgName()
-		}
 		return p != typeInfo.GetPkgPath()
 	}).ToSlice(&result)
 	return result

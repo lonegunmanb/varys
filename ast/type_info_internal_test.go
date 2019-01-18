@@ -4,6 +4,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"go/types"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func (suite *typeInfoInternalTestSuite) SetupTest() {
 }
 
 func (suite *typeInfoInternalTestSuite) TestStructInfo() {
-	testDatas := []*typeInfoTestData{
+	testInputs := []*typeInfoTestData{
 		{
 			given: "given simple struct code",
 			sourceCode: `
@@ -57,7 +58,7 @@ type Struct struct{
 			pkgName:    "test",
 		},
 	}
-	for _, data := range testDatas {
+	for _, data := range testInputs {
 		suite.testStructInfo(data)
 	}
 }
@@ -70,24 +71,24 @@ type typeInfoTestData struct {
 }
 
 func (suite *typeInfoInternalTestSuite) testStructInfo(testData *typeInfoTestData) {
-	Convey(testData.given, suite.T(), func() {
+	Given(testData.given, suite.T(), func() {
 		suite.SetupTest()
 		sourceCode := testData.sourceCode
-		Convey("when walker parse source code", func() {
+		When("walker parse source code", func() {
 			err := suite.walker.Parse(testPkgPath, sourceCode)
-			Convey("struct name should equal to expected", func() {
+			Then("struct name should equal to expected", func() {
 				So(err, ShouldBeNil)
 				typeInfo := suite.walker.Types()[0]
-				So(typeInfo.Name, ShouldEqual, testData.structName)
-				So(typeInfo.PkgPath, ShouldEqual, testPkgPath)
-				So(typeInfo.PkgName, ShouldEqual, testData.pkgName)
+				And(typeInfo.Name, ShouldEqual, testData.structName)
+				And(typeInfo.PkgPath, ShouldEqual, testPkgPath)
+				And(typeInfo.PkgName, ShouldEqual, testData.pkgName)
 			})
 		})
 	})
 }
 
 func (suite *typeInfoInternalTestSuite) TestGetStructDepImportPkgPaths() {
-	Convey("given a complex struct", suite.T(), func() {
+	Given("a complex struct", suite.T(), func() {
 		sourceCode := `
 package ast
 import (
@@ -112,15 +113,68 @@ type Struct struct {
 	Map map[*scanner.Error]*token.FileSet //dep go/scanner, go/token
 }
 `
-		Convey("when walker parse source code", func() {
+		When("walker parse source code", func() {
 			err := suite.walker.Parse(testPkgPath, sourceCode)
-			Convey("type's dep paths should equal to expected", func() {
+			Then("type's dep paths should equal to expected", func() {
 				So(err, ShouldBeNil)
 				structInfo := suite.walker.Types()[0]
 				depPkgPaths := structInfo.GetDepPkgPaths("")
-				So(len(depPkgPaths), ShouldEqual, 2)
-				So(depPkgPaths, ShouldContain, "go/scanner")
-				So(depPkgPaths, ShouldContain, "go/token")
+				And(depPkgPaths, ShouldHaveLength, 2)
+				And(depPkgPaths, ShouldContain, "go/scanner")
+				And(depPkgPaths, ShouldContain, "go/token")
+			})
+		})
+	})
+}
+
+type stubFieldInfo struct {
+	tag         string
+	depPkgPaths []string
+}
+
+func (*stubFieldInfo) GetName() string {
+	panic("implement me")
+}
+
+func (*stubFieldInfo) GetType() types.Type {
+	panic("implement me")
+}
+
+func (f *stubFieldInfo) GetTag() string {
+	return f.tag
+}
+
+func (*stubFieldInfo) GetReferenceFromType() TypeInfo {
+	panic("implement me")
+}
+
+func (*stubFieldInfo) GetReferenceFromMethod() MethodInfo {
+	panic("implement me")
+}
+
+func (f *stubFieldInfo) GetDepPkgPaths() []string {
+	return f.depPkgPaths
+}
+
+func (suite *typeInfoInternalTestSuite) TestGetStructDepPkgPathsWithFieldTagFilter() {
+	Given("a struct with two field which first one with a tag", suite.T(), func() {
+		structInfo := &typeInfo{
+			Fields: []FieldInfo{
+				&stubFieldInfo{
+					tag:         "inject:\"\"",
+					depPkgPaths: []string{"go/scanner"},
+				},
+				&stubFieldInfo{
+					tag:         "",
+					depPkgPaths: []string{"go/types"},
+				},
+			},
+		}
+		When("get dep pkg paths with inject tag", func() {
+			depPkgPaths := structInfo.GetDepPkgPaths("inject")
+			Then("only go/scanner should be output", func() {
+				And(depPkgPaths, ShouldHaveLength, 1)
+				And(depPkgPaths[0], ShouldEqual, "go/scanner")
 			})
 		})
 	})

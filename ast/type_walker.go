@@ -6,6 +6,7 @@ import (
 	"github.com/lonegunmanb/johnnie"
 	"go/ast"
 	"go/types"
+	"log"
 	"reflect"
 )
 
@@ -113,7 +114,7 @@ func (walker *typeWalker) addTypeInfo(typeExpr ast.Expr, kind reflect.Kind) {
 	item := walker.typeInfoStack.Pop()
 	typeName, ok := item.(string)
 	if !ok {
-		println(typeName)
+		log.Panicf("unknown item from typeInfoStack, expected type name, got %T", item)
 	}
 	analyzedType := walker.analyzedTypes.Types[typeExpr].Type
 	typeInfo := &typeInfo{

@@ -4,12 +4,18 @@ package ast
 
 import (
 	"github.com/golang/mock/gomock"
+	"github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 const testPkgPath = "github.com/lonegunmanb/varys/ast"
 const testPhysicalPath = "Users/test/go/src/lonegunmanb/varys/ast"
+
+var Given = convey.Convey
+var When = convey.Convey
+var Then = convey.Convey
+var And = convey.So
 
 func prepareTypeWalker(t *testing.T) *typeWalker {
 	walker := NewTypeWalker().(*typeWalker)
