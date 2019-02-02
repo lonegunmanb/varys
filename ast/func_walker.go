@@ -34,7 +34,7 @@ func NewFuncWalker(typeRetriever TypeRetriever) FuncWalker {
 }
 
 func (walker *funcWalker) WalkFuncDecl(funcDecl *ast.FuncDecl) bool {
-	isMethod := funcDecl.Recv != nil && len(funcDecl.Recv.List) == 1
+	isMethod := funcDecl.Recv != nil
 	if isMethod {
 		funcType := funcDecl.Type
 		methodInfo := &methodInfo{

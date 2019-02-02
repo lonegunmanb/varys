@@ -38,8 +38,8 @@ type walkFuncDeclTestData struct {
 }
 
 func TestWalkFuncDecl(t *testing.T) {
-	Convey("given func decl", t, func() {
-		testData := &walkFuncDeclTestData{
+	testDatas := []*walkFuncDeclTestData{
+		{
 			name:                  "name",
 			typeInfo:              &typeInfo{},
 			receiverTypeExpr:      &ast.StructType{},
@@ -47,7 +47,24 @@ func TestWalkFuncDecl(t *testing.T) {
 			returnTypeExpr:        &ast.InterfaceType{},
 			expectedParameterType: &types.Basic{},
 			expectedReturnType:    &types.Interface{},
-		}
+		},
+		{
+			name:                  "name",
+			typeInfo:              &typeInfo{},
+			receiverTypeExpr:      nil,
+			parameterTypeExpr:     &ast.BasicLit{},
+			returnTypeExpr:        &ast.InterfaceType{},
+			expectedParameterType: &types.Basic{},
+			expectedReturnType:    &types.Interface{},
+		},
+	}
+	for _, testData := range testDatas {
+		testAnalyzeMethod(t, testData)
+	}
+}
+
+func testAnalyzeMethod(t *testing.T, testData *walkFuncDeclTestData) {
+	Convey("given func decl", t, func() {
 		ctrl, mockTypeRetriever := setupMockTypeRetriever(t, testData)
 		defer ctrl.Finish()
 		funcDecl := createFuncDecl(testData)
