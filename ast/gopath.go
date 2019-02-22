@@ -71,22 +71,38 @@ func getGoPaths(env GoPathEnv) (gopaths []string, err error) {
 
 func getPkgPathFromSystemPathUsingGoPath(isWindows bool, goPaths []string, systemPath string) (pkgPath string, err error) {
 	goSrcPath := linq.From(goPaths).Select(func(path interface{}) interface{} {
-		srcTemplate := "%s/src/"
+		srcTemplate := "%s/src"
 		if isWindows {
-			srcTemplate = "%s\\src\\"
+			srcTemplate = "%s\\src"
 		}
 		return fmt.Sprintf(srcTemplate, path)
 	}).FirstWith(func(path interface{}) bool {
-		return strings.HasPrefix(systemPath, path.(string))
+		stringPath := path.(string)
+		return isInGoPath(stringPath, systemPath)
 	})
 	if goSrcPath == nil {
 		err = errors.New(fmt.Sprintf("%s is not in go src path", systemPath))
 		return
 	} else {
-		pkgPath = strings.TrimPrefix(systemPath, goSrcPath.(string))
+		goPath := goSrcPath.(string)
+		if isGoPathRoot(goPath, systemPath) {
+			pkgPath = ""
+			return
+		}
+		pkgPath = strings.TrimPrefix(systemPath, goPath)
+		pkgPath = strings.TrimPrefix(pkgPath, "/")
+		pkgPath = strings.TrimPrefix(pkgPath, "\\")
 		if isWindows {
 			pkgPath = strings.Replace(pkgPath, "\\", "/", -1)
 		}
 	}
 	return
+}
+
+func isInGoPath(stringPath string, systemPath string) bool {
+	return isGoPathRoot(stringPath, systemPath) || strings.HasPrefix(systemPath, stringPath)
+}
+
+func isGoPathRoot(stringPath string, systemPath string) bool {
+	return stringPath == (systemPath)
 }

@@ -22,6 +22,11 @@ func TestGetPkgPathFromSystemPathUsingGoPath(t *testing.T) {
 	},
 		"/Users/user/go/src/github.com/lonegunmanb/syringe",
 		expectedPkgName)
+	testGetPkgPathFromSystemPath(t, []string{
+		"/Users/user/go",
+	},
+		"/Users/user/go/src",
+		"")
 }
 
 func TestGetPkgPathInWindows(t *testing.T) {
