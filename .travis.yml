@@ -11,7 +11,10 @@ addons:
 
 install:
   - go get github.com/golang/mock/gomock
+  - cd $GOPATH/src/github.com/golang/mock
+  - git checkout tags/v1.2.0
   - go install github.com/golang/mock/mockgen
+  - cd $TRAVIS_BUILD_DIR
   - go get -t -v ./...
   - go generate ./...
 
