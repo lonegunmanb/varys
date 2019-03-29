@@ -10,7 +10,6 @@ import (
 const expectedPkgName = "github.com/lonegunmanb/syringe"
 
 func TestGetPkgPathFromSystemPathUsingGoPath(t *testing.T) {
-
 	testGetPkgPathFromSystemPath(t, []string{
 		"/Users/user/go",
 	},
@@ -27,6 +26,18 @@ func TestGetPkgPathFromSystemPathUsingGoPath(t *testing.T) {
 	},
 		"/Users/user/go/src",
 		"")
+}
+
+func TestIsGoPathRootPathNotInGoPathShouldReturnFalse(t *testing.T) {
+	Convey("given non-windows single gopath", t, func() {
+		const goPath = "/Users/user/go"
+		Convey("when pkg is not in go path", func() {
+			ok := isGoPathRoot(goPath, "/libs")
+			Convey("then result should be false", func() {
+				So(ok, ShouldBeFalse)
+			})
+		})
+	})
 }
 
 func TestGetPkgPathInWindows(t *testing.T) {
