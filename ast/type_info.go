@@ -80,7 +80,12 @@ func (typeInfo *typeInfo) GetDepPkgPaths(fieldTagFilter string) []string {
 		fieldFilter = regexp.MustCompile(fmt.Sprintf("%s:\".*\"", fieldTagFilter))
 	}
 	result := make([]string, 0)
-	linq.From(typeInfo.EmbeddedTypes).Select(
+	linq.From(typeInfo.EmbeddedTypes).Where(func(embeddedType interface{}) bool {
+		if fieldTagFilter != "" {
+			return fieldFilter.MatchString(embeddedType.(EmbeddedType).GetTag())
+		}
+		return true
+	}).Select(
 		func(embeddedType interface{}) interface{} {
 			return embeddedType.(EmbeddedType).GetPkgPath()
 		}).Union(linq.From(typeInfo.Fields).Where(func(fieldInfo interface{}) bool {

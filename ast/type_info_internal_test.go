@@ -127,6 +127,35 @@ type Struct struct {
 	})
 }
 
+type stubEmbeddedType struct {
+	tag        string
+	depPkgPath string
+}
+
+func (stubEmbeddedType) GetFullName() string {
+	panic("implement me")
+}
+
+func (t stubEmbeddedType) GetPkgPath() string {
+	return t.depPkgPath
+}
+
+func (stubEmbeddedType) GetKind() EmbeddedKind {
+	panic("implement me")
+}
+
+func (t stubEmbeddedType) GetTag() string {
+	return t.tag
+}
+
+func (stubEmbeddedType) GetType() types.Type {
+	panic("implement me")
+}
+
+func (stubEmbeddedType) GetReferenceFrom() TypeInfo {
+	panic("implement me")
+}
+
 type stubFieldInfo struct {
 	tag         string
 	depPkgPaths []string
@@ -159,6 +188,15 @@ func (f *stubFieldInfo) GetDepPkgPaths() []string {
 func (suite *typeInfoInternalTestSuite) TestGetStructDepPkgPathsWithFieldTagFilter() {
 	Given("a struct with two field which first one with a tag", suite.T(), func() {
 		structInfo := &typeInfo{
+			EmbeddedTypes: []EmbeddedType{
+				&stubEmbeddedType{
+					depPkgPath: "go/ast",
+				},
+				&stubEmbeddedType{
+					tag:        "inject:\"\"",
+					depPkgPath: "go/os",
+				},
+			},
 			Fields: []FieldInfo{
 				&stubFieldInfo{
 					tag:         "inject:\"\"",
@@ -173,8 +211,9 @@ func (suite *typeInfoInternalTestSuite) TestGetStructDepPkgPathsWithFieldTagFilt
 		When("get dep pkg paths with inject tag", func() {
 			depPkgPaths := structInfo.GetDepPkgPaths("inject")
 			Then("only go/scanner should be output", func() {
-				And(depPkgPaths, ShouldHaveLength, 1)
-				And(depPkgPaths[0], ShouldEqual, "go/scanner")
+				And(depPkgPaths, ShouldHaveLength, 2)
+				And(depPkgPaths, ShouldContain, "go/scanner")
+				And(depPkgPaths, ShouldContain, "go/os")
 			})
 		})
 	})
